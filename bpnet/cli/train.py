@@ -12,6 +12,8 @@ from uuid import uuid4
 import numpy as np
 from tqdm import tqdm
 import keras.backend as K
+import keras
+from tf.keras.models import load_model
 from bpnet.dataspecs import DataSpec
 from bpnet.data import NumpyDataset
 from bpnet.utils import (create_tf_session, write_json,
@@ -345,6 +347,8 @@ def train(output_dir,
           memfrac_gpu=None,
           cometml_experiment=None,
           wandb_run=None,
+          transfer_learning=False,
+          transfer_path=None,
           ):
     """Main entry point to configure in the gin config
 
@@ -421,6 +425,21 @@ def train(output_dir,
 
         num_workers = 1  # don't use multi-processing any more
 
+    if(transfer_learning):
+      temp_model = load_model(transfer_path)
+      # Copy all weights from the old model to the new one
+      for i,layer in enumerate(temp_model.layers):
+        if(isinstance(layer, keras.engine.training.Model)):
+          for j,l in enumerate(model.layers):
+            if(l.output.shape == model.layers[i].layers[j].output.shape):
+              model.layers[i].layers[j].set_weights(l.get_weights())
+              model.layers[i].layers[j].trainable = False
+              print("\tCopied weights for layer:", l)
+        elif(layer.output.shape == model.layers[i].output.shape):
+          model.layers[i].set_weights(layer.get_weights())
+          model.layers[i].trainable = False
+          print("Copied weigts for layer:", layer)
+    
     tr = trainer_cls(model,
                      train_dataset,
                      valid_dataset,
