@@ -13,6 +13,7 @@ import numpy as np
 from tqdm import tqdm
 import keras.backend as K
 import keras
+import tensorflow as tf
 from tf.keras.models import load_model
 from bpnet.dataspecs import DataSpec
 from bpnet.data import NumpyDataset
