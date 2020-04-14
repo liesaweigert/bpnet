@@ -349,6 +349,7 @@ def train(output_dir,
           wandb_run=None,
           transfer_learning=False,
           transfer_path=None,
+          transfer_till_layer=0,
           ):
     """Main entry point to configure in the gin config
 
@@ -427,16 +428,17 @@ def train(output_dir,
 
     if(transfer_learning):
       temp_model = load_model(transfer_path)
-      # Copy all weights from the old model to the new one
-      for i,layer in enumerate(temp_model.layers):
-        if(isinstance(layer, keras.engine.training.Model)):
-          for j,l in enumerate(model.layers):
-            if(l.output.shape == model.layers[i].layers[j].output.shape):
-              model.layers[i].layers[j].set_weights(l.get_weights())
+      # Copy all weights till layer transfer_till_layer from the old model to the new one
+      for i in range(min(transfer_till_layer, len(temp_model.layers))):
+        # Check wether layer is model itself
+        if(isinstance(temp_model.layers[i], keras.engine.training.Model)):
+          for j in range(min(transfer_till_layer - i, len(temp_model.layers[i].layers))):
+            if(temp_model.layers[i].layers[j].output.shape == model.layers[i].layers[j].output.shape):
+              model.layers[i].layers[j].set_weights(temp_model.layers[i].layers[j].get_weights())
               model.layers[i].layers[j].trainable = False
               print("\tCopied weights for layer:", l)
-        elif(layer.output.shape == model.layers[i].output.shape):
-          model.layers[i].set_weights(layer.get_weights())
+        elif(temp_model.layers[i].output.shape == model.layers[i].output.shape):
+          model.layers[i].set_weights(temp_model.layers[i].get_weights())
           model.layers[i].trainable = False
           print("Copied weigts for layer:", layer)
     
