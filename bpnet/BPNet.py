@@ -69,6 +69,7 @@ class BPNetSeqModel:
         """
 
         preds = self.seqmodel.predict(seq, batch_size=batch_size)
+        print(preds)
         return {task: preds[f'{task}/profile'] * np.exp(preds[f'{task}/counts'][:, np.newaxis])
                 for task in self.seqmodel.tasks}
 
@@ -419,18 +420,16 @@ class BPNetSeqModel:
                     si_profile = 1
                     si_counts = 1
 
-                # Assertion to prevent multiple nucleotides being encoded at a genomic position.
-                if not np.all(seq.astype(bool).sum(axis=-1).max() == 1):
+                # profile - multipl
+                if np.all(seq.astype(bool).sum(axis=-1).max() == 1):
                     continue
 
-                if 'profile/wn' in pred_summaries:
-                    add_entry(bws[task]['contrib.profile'],
-                              to_1d_contrib(hyp_contrib[f'{task}/profile'], seq) * si_profile,
-                              interval, start_idx)
-                if 'counts/pre-act' in pred_summaries:
-                    add_entry(bws[task]['contrib.counts'],
-                              to_1d_contrib(hyp_contrib[f'{task}/count'], seq) * si_counts,
-                              interval, start_idx)
+                add_entry(bws[task]['contrib.profile'],
+                          to_1d_contrib(hyp_contrib[f'{task}/profile'], seq) * si_profile,
+                          interval, start_idx)
+                add_entry(bws[task]['contrib.counts'],
+                          to_1d_contrib(hyp_contrib[f'{task}/count'], seq) * si_counts,
+                          interval, start_idx)
 
             prev_stop = max(interval.stop, prev_stop)
 

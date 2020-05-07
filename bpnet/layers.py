@@ -9,6 +9,34 @@ import gin
 
 
 @gin.configurable
+class MPRAFCN:
+    def __init__(self,
+                n_tasks=1,
+                dropout=0,
+                n_convs=3,
+                padding='same',
+                batchnorm=False):
+        self.n_tasks = n_tasks
+        self.dropout = dropout
+        self.n_convs = n_convs
+        self.padding = padding
+        self.batchnorm = batchnorm
+
+    def __call__(self,x):
+        for k in range(self.n_convs):
+            x = kl.Conv1D(32, 3, padding=self.padding)(x)
+            if self.dropout:
+                x = kl.Dropout(self.dropout)(x)
+            if self.batchnorm:
+                x = kl.BatchNormalization()(x)
+
+        x = kl.Flatten()(x)
+        x = kl.Dense(self.n_tasks)(x)
+        return x
+
+
+
+@gin.configurable
 class GlobalAvgPoolFCN:
 
     def __init__(self,
@@ -174,6 +202,43 @@ class DilatedConv1D:
                 d -= 2 * dillation
             return d
 
+@gin.configurable
+class AlternateBody:
+    """Alternate body with different convolutions
+    """
+
+    def __init__(self, filters=64, conv1_kernel_size=5, n_pooling=3, n_combination=3):
+        self.filters = filters
+        self.kernel_size = conv1_kernel_size
+        self.n_pooling = n_pooling
+        self.n_combination = n_combination
+
+    def __call__(self, inp):
+        """inp = (None,4)
+        """
+        previous_layer = inp
+
+        for j in range(self.n_pooling + 1):
+            current_stack = []
+            for i in range(self.n_combination):
+                conv = kl.Conv1D(filters = self.filters,
+                    kernel_size = self.kernel_size,
+                    padding = 'same')(previous_layer)
+                batchnorm = kl.BatchNormalization()(conv)
+                dropout = kl.Dropout(0.5)(batchnorm)
+                current_stack.append(dropout)
+                previous_layer = dropout
+                combined_layer = kl.add(current_stack)
+            if (j < self.n_pooling):
+                smaller_layer = kl.Conv1D(filters=self.filters,
+                    kernel_size = 2,
+                    strides = 2)(combined_layer)
+                previous_layer = smaller_layer
+
+        return combined_layer
+
+    def get_len_change(self):
+        return - (self.n_pooling * 2)
 
 @gin.configurable
 class DeConv1D:

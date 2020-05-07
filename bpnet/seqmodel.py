@@ -62,6 +62,7 @@ class SeqModel:
         self.target_names = []
         self.postproc_fns = []
         bias_inputs = []
+        
         for task in tasks:
             for head in heads:
                 head = head.copy()
