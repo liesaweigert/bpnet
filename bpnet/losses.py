@@ -9,6 +9,11 @@ from gin import config
 
 
 @gin.configurable
+def ignoreNaNloss(y_true, y_pred):
+    bool_finite = tf.is_finite(y_true)
+    return K.mean(K.square(tf.boolean_mask(y_pred, bool_finite) - tf.boolean_mask(y_true, bool_finite)), axis=-1)
+
+@gin.configurable
 def multinomial_nll(true_counts, logits):
     """Compute the multinomial negative log-likelihood along the sequence (axis=1)
     and sum the values across all each channels
@@ -28,6 +33,7 @@ def multinomial_nll(true_counts, logits):
 
     # get the sequence length for normalization
     seqlen = tf.to_float(tf.shape(true_counts)[0])
+    print("Something is happening here")
 
     return -tf.reduce_sum(dist.log_prob(true_counts_perm)) / seqlen
 

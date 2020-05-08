@@ -12,8 +12,6 @@ from uuid import uuid4
 import numpy as np
 from tqdm import tqdm
 import keras.backend as K
-import keras
-from keras.models import load_model
 from bpnet.dataspecs import DataSpec
 from bpnet.data import NumpyDataset
 from bpnet.utils import (create_tf_session, write_json,
@@ -347,9 +345,8 @@ def train(output_dir,
           memfrac_gpu=None,
           cometml_experiment=None,
           wandb_run=None,
-          transfer_learning=False,
-          transfer_path=None,
-          transfer_till_layer=0,
+          train_data=None,
+          val_data=None
           ):
     """Main entry point to configure in the gin config
 
@@ -410,47 +407,32 @@ def train(output_dir,
     if in_memory:
         # load the training datasets to memory
         logger.info("Loading the training data into memory")
-        train_dataset = NumpyDataset(train_dataset.load_all(batch_size=batch_size,
-                                                            num_workers=num_workers))
+        #train_dataset = NumpyDataset(train_dataset.load_all(batch_size=batch_size,
+        #                                                    num_workers=num_workers))
+        train_dataset = NumpyDataset(train_data)
         logger.info("Loading the validation data into memory")
-        if isinstance(valid_dataset, list):
-            # appropriately handle the scenario where multiple
-            # validation data may be provided as a list of (name, Dataset) tuples
-            valid_dataset = [(k, NumpyDataset(data.load_all(batch_size=batch_size,
-                                                            num_workers=num_workers)))
-                             for k, data in valid_dataset]
-        else:
-            # only a single Dataset was provided
-            valid_dataset = NumpyDataset(valid_dataset.load_all(batch_size=batch_size,
-                                                                num_workers=num_workers))
+        #if isinstance(valid_dataset, list):
+        #    logger.info('Shit')
+        #    # appropriately handle the scenario where multiple
+        #    # validation data may be provided as a list of (name, Dataset) tuples
+        #    valid_dataset = [(k, NumpyDataset(data.load_all(batch_size=batch_size,
+        #                                                    num_workers=num_workers)))
+        #                     for k, data in valid_dataset]
+        #else:
+        #    # only a single Dataset was provided
+        #    #valid_dataset = NumpyDataset(valid_dataset.load_all(batch_size=batch_size,
+        #    #                                                    num_workers=num_workers))
+        valid_dataset = NumpyDataset(val_data)
 
         num_workers = 1  # don't use multi-processing any more
 
-    if(transfer_learning):
-      temp_model = load_model(transfer_path)
-      # Copy all weights till layer transfer_till_layer from the old model to the new one
-      for i in range(min(transfer_till_layer, len(temp_model.layers))):
-        # Check wether layer is model itself
-        print(temp_model.layers[i])
-        print(model.model.layers[3].layers[i])
-        if(isinstance(temp_model.layers[i], keras.engine.training.Model)):
-          for j in range(min(transfer_till_layer - i, len(temp_model.layers[i].layers))):
-            if(temp_model.layers[i].layers[j].output.shape == model.model.layers[3].layers[i].layers[j].output.shape):
-              model.layers[3].layers[i].layers[j].set_weights(temp_model.layers[i].layers[j].get_weights())
-              model.layers[3].layers[i].layers[j].trainable = False
-              print("\tCopied weights for layer:", l)
-        elif(temp_model.layers[i].output.shape == model.model.layers[3].layers[i].output.shape):
-          model.model.layers[3].layers[i].set_weights(temp_model.layers[i].get_weights())
-          model.model.layers[3].layers[i].trainable = False
-          print("Copied weigts for layer:", layer)
-    
     tr = trainer_cls(model,
                      train_dataset,
                      valid_dataset,
                      output_dir,
                      cometml_experiment,
                      wandb_run)
-
+    #print(model.model.summary())
     tr.train(batch_size=batch_size,
              epochs=epochs,
              early_stop_patience=early_stop_patience,
@@ -593,7 +575,9 @@ def bpnet_train(dataspec,
                 cometml_project="",
                 run_id=None,
                 note_params="",
-                overwrite=False):
+                overwrite=False,
+                train_data=None,
+                val_data=None):
     """Train a model using gin-config
 
     Output files:
@@ -717,4 +701,6 @@ def bpnet_train(dataspec,
                  in_memory=in_memory,
                  # to execute the sub-notebook
                  memfrac_gpu=memfrac_gpu,
-                 gpu=gpu)
+                 gpu=gpu,
+                 train_data=train_data,
+                 val_data=val_data)

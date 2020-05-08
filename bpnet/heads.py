@@ -9,6 +9,7 @@ import keras.layers as kl
 import gin
 import os
 import abc
+from bpnet.losses import ignoreNaNloss
 
 
 class BaseHead:
@@ -89,7 +90,7 @@ class MPRAHead(BaseHeadWBias):
     def __init__(self, target_name,  # "{task}/scalar"
                  net,  # function that takes a keras tensor and returns a keras tensor
                  activation=None,
-                 loss='mse',
+                 loss=ignoreNaNloss,
                  loss_weight=1,
                  metric=RegressionMetrics(),
                  postproc_fn=None,  # post-processing to apply so that we are in the right scale

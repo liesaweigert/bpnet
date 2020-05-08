@@ -11,6 +11,7 @@ from kipoi_utils.data_utils import numpy_collate_concat
 from bpnet.data import nested_numpy_minibatch
 from bpnet.utils import flatten, fnmatch_any, _listify
 from bpnet.functions import mean
+from bpnet.losses import ignoreNaNloss
 import gin
 from gin import config
 import logging
