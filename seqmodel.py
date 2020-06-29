@@ -12,6 +12,7 @@ from bpnet.data import nested_numpy_minibatch
 from bpnet.utils import flatten, fnmatch_any, _listify
 from bpnet.functions import mean
 from bpnet.losses import ignoreNaNloss
+from keras.models import model_from_json
 import gin
 from gin import config
 import logging
@@ -224,7 +225,7 @@ class SeqModel:
             x = {'seq': x, **self.neutral_bias_inputs(len(x), seqlen=seqlen)}
 
         if method == "deeplift":
-            fn = self._contrib_deeplift_fn(name=name, preact_only=preact_only)
+            fn = self._contrib_deeplift_fn(x, name, preact_only=preact_only)
         elif method == "grad":
             fn = self._contrib_grad_fn(x, name, preact_only=preact_only)
         else:
