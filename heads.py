@@ -86,11 +86,11 @@ def named_tensor(x, name):
 # Head implementations
 
 @gin.configurable
-class MPRAHead(BaseHeadWBias):
+class ActivityHead(BaseHeadWBias):
     def __init__(self, target_name,  # "{task}/scalar"
                  net,  # function that takes a keras tensor and returns a keras tensor
                  activation=None,
-                 loss=ignoreNaNloss,
+                 loss='binary_crossentropy',
                  loss_weight=1,
                  metric=RegressionMetrics(),
                  postproc_fn=None,  # post-processing to apply so that we are in the right scale

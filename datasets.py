@@ -130,14 +130,10 @@ class TsvReader:
             center = (self.df[1] + self.df[2]) // 2
             valid_seqs = ((center > self.resize_width // 2 + 1) &
                           (center < self.df[0].map(chromosome_lens).astype(int) - self.resize_width // 2 - 1))
-            print("File", self.tsv_file)
-            print("Center", center)
             self.df = self.df[valid_seqs]
-            print("N_int:", n_int)
             if len(self.df) != n_int:
                 print(f"Skipped {n_int - len(self.df)} intervals"
                       " outside of the genome size")
-        print("Dataframe", self.df)
 
     def __getitem__(self, idx):
         """Returns (pybedtools.Interval, labels)
@@ -271,7 +267,7 @@ class StrandedProfile(Dataset):
 
         if self.intervals_file is None:
             # concatenate the bed files
-            self.dfm = pd.concat([TsvReader(task_spec.peaks,
+            dfs = [TsvReader(task_spec.peaks,
                                             num_chr=False,
                                             incl_chromosomes=incl_chromosomes,
                                             excl_chromosomes=excl_chromosomes,
@@ -279,7 +275,23 @@ class StrandedProfile(Dataset):
                                             resize_width=max(self.peak_width, self.seq_width)
                                             ).df.iloc[:, :3].assign(task=task)
                                   for task, task_spec in self.ds.task_specs.items()
-                                  if task_spec.peaks is not None])
+                                  if task_spec.peaks is not None]
+            print(self.ds.task_specs.items())
+            for i,(task, task_specs) in enumerate(self.ds.task_specs.items()):
+              dfs[i][task]=1
+
+            self.dfm = pd.concat(dfs)
+            self.dfm = self.dfm.replace(np.nan, 0)
+
+            #self.dfm = pd.concat([TsvReader(task_spec.peaks,
+            #                                num_chr=False,
+            #                                incl_chromosomes=incl_chromosomes,
+            #                                excl_chromosomes=excl_chromosomes,
+            #                                chromosome_lens=self.chrom_lens,
+            #                                resize_width=max(self.peak_width, self.seq_width)
+            #                                ).df.iloc[:, :3].assign(task=task)
+            #                      for task, task_spec in self.ds.task_specs.items()
+            #                      if task_spec.peaks is not None])
             assert list(self.dfm.columns)[:4] == [0, 1, 2, "task"]
             if self.shuffle:
                 self.dfm = self.dfm.sample(frac=1)
@@ -372,7 +384,15 @@ class StrandedProfile(Dataset):
         if self.track_transform is not None:
             for task in self.tasks:
                 cuts[f'{task}/profile'] = self.track_transform(cuts[f'{task}/profile'])
+        # Add binary thing
 
+        for i, task in enumerate(self.tasks):
+          #print("I", i)
+          #print("task", task)
+          #print("active", self.dfm.iat[idx, (3+i)])
+
+          cuts[f'{task}/activity'] = self.dfm.iat[idx, (4+i)]
+        
         # Add total number of counts
         for task in self.tasks:
             cuts[f'{task}/counts'] = self.total_count_transform(cuts[f'{task}/profile'].sum(0))

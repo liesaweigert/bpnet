@@ -9,7 +9,7 @@ import gin
 
 
 @gin.configurable
-class MPRAFCN:
+class ActivityFCN:
     def __init__(self,
                 n_tasks=1,
                 dropout=0,
@@ -33,8 +33,6 @@ class MPRAFCN:
         x = kl.Flatten()(x)
         x = kl.Dense(self.n_tasks)(x)
         return x
-
-
 
 @gin.configurable
 class GlobalAvgPoolFCN:
