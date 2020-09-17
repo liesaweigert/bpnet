@@ -6,12 +6,18 @@ from concise.utils.helper import get_from_module
 import keras.backend as K
 import gin
 from gin import config
+from scipy.stats import pearsonr
 
 
 @gin.configurable
 def ignoreNaNloss(y_true, y_pred):
     bool_finite = tf.is_finite(y_true)
     return K.mean(K.square(tf.boolean_mask(y_pred, bool_finite) - tf.boolean_mask(y_true, bool_finite)), axis=-1)
+
+@gin.configurable
+def correlation_loss(y_true, y_pred):
+    rp = pearsonr(y_true,y_pred)[0]
+    return 1 - (rp**2)
 
 @gin.configurable
 def multinomial_nll(true_counts, logits):
@@ -80,10 +86,20 @@ class PoissonMultinomialNLL:
     def get_config(self):
         return {"c_task_weight": self.c_task_weight}
 
+@gin.configurable
+class PearsonCorrelationLoss:
+    def __init__(self, c_task_weight=1):
+        self.c_task_weight = c_task_weight
+
+    def __call__(self, true_counts, preds):
+        probs = correlation_loss(true_counts, preds)
+        return probs * self.c_task_weight
 
 AVAILABLE = ["multinomial_nll",
              "CountsMultinomialNLL",
-             "PoissonMultinomialNLL"]
+             "PoissonMultinomialNLL",
+             "ignoreNaNloss",
+             "correlation_loss"]
 
 
 def get(name):
