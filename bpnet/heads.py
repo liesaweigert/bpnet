@@ -86,7 +86,7 @@ def named_tensor(x, name):
 # Head implementations
 
 @gin.configurable
-class MPRAHead(BaseHeadWBias):
+class ActivityHead(BaseHeadWBias):
     def __init__(self, target_name,  # "{task}/scalar"
                  net,  # function that takes a keras tensor and returns a keras tensor
                  activation=None,

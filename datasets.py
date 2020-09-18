@@ -131,6 +131,7 @@ class TsvReader:
             valid_seqs = ((center > self.resize_width // 2 + 1) &
                           (center < self.df[0].map(chromosome_lens).astype(int) - self.resize_width // 2 - 1))
             self.df = self.df[valid_seqs]
+
             if len(self.df) != n_int:
                 print(f"Skipped {n_int - len(self.df)} intervals"
                       " outside of the genome size")
@@ -384,11 +385,9 @@ class StrandedProfile(Dataset):
         if self.track_transform is not None:
             for task in self.tasks:
                 cuts[f'{task}/profile'] = self.track_transform(cuts[f'{task}/profile'])
+      
         # Add binary thing
-
         for i, task in enumerate(self.tasks):
-          #print("I", i)
-          #print("task", task)
           #print("active", self.dfm.iat[idx, (3+i)])
 
           cuts[f'{task}/activity'] = self.dfm.iat[idx, (4+i)]

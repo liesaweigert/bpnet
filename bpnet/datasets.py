@@ -369,6 +369,11 @@ class StrandedProfile(Dataset):
         if self.track_transform is not None:
             for task in self.tasks:
                 cuts[f'{task}/profile'] = self.track_transform(cuts[f'{task}/profile'])
+        # Add binary thing
+        for i, task in enumerate(self.tasks):
+          #print("active", self.dfm.iat[idx, (3+i)])
+
+          cuts[f'{task}/activity'] = self.dfm.iat[idx, (4+i)]
 
         # Add total number of counts
         for task in self.tasks:

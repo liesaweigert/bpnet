@@ -14,6 +14,27 @@ def ignoreNaNloss(y_true, y_pred):
     return K.mean(K.square(tf.boolean_mask(y_pred, bool_finite) - tf.boolean_mask(y_true, bool_finite)), axis=-1)
 
 @gin.configurable
+def correlation_loss(y_true, y_pred):
+    axis = 0
+    x = tf.convert_to_tensor(y_true)
+    y = tf.cast(y_pred, x.dtype)
+    n = tf.cast(tf.shape(x)[axis], x.dtype)
+    xsum = tf.reduce_sum(x, axis=axis)
+    ysum = tf.reduce_sum(y, axis=axis)
+    xmean = xsum / n
+    ymean = ysum / n
+    xsqsum = tf.reduce_sum( tf.squared_difference(x, xmean), axis=axis)
+    ysqsum = tf.reduce_sum( tf.squared_difference(y, ymean), axis=axis)
+    cov = tf.reduce_sum( (x - xmean) * (y - ymean), axis=axis)
+    corr = cov / tf.sqrt(xsqsum * ysqsum)
+    # absdif = tmean(tf.abs(x - y), axis=axis) / tf.sqrt(yvar)
+    sqdif = tf.reduce_sum(tf.squared_difference(x, y), axis=axis) / n / tf.sqrt(ysqsum / n)
+    # meandif = tf.abs(xmean - ymean) / tf.abs(ymean)
+    # vardif = tf.abs(xvar - yvar) / yvar
+    # return tf.convert_to_tensor( K.mean(tf.constant(1.0, dtype=x.dtype) - corr + (meandif * 0.01) + (vardif * 0.01)) , dtype=tf.float32 )
+    return tf.convert_to_tensor( K.mean(tf.constant(1.0, dtype=x.dtype) - corr + (0.01 * sqdif)) , dtype=tf.float32 )
+
+@gin.configurable
 def multinomial_nll(true_counts, logits):
     """Compute the multinomial negative log-likelihood along the sequence (axis=1)
     and sum the values across all each channels
@@ -81,10 +102,20 @@ class PoissonMultinomialNLL:
     def get_config(self):
         return {"c_task_weight": self.c_task_weight}
 
+@gin.configurable
+class PearsonCorrelationLoss:
+    def __init__(self, c_task_weight=1):
+        self.c_task_weight = c_task_weight
+
+    def __call__(self, true_counts, preds):
+        probs = correlation_loss(true_counts, preds)
+        return probs * self.c_task_weight
 
 AVAILABLE = ["multinomial_nll",
              "CountsMultinomialNLL",
-             "PoissonMultinomialNLL"]
+             "PoissonMultinomialNLL",
+             "ignoreNaNloss",
+             "correlation_loss"]
 
 
 def get(name):

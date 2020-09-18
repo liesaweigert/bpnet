@@ -63,7 +63,7 @@ class Dataset(BaseDataLoader):
         """
         raise NotImplementedError
 
-    def _batch_iterable(self, batch_size=32, shuffle=False, num_workers=0, drop_last=False, **kwargs):
+    def _batch_iterable(self, batch_size=32, shuffle=False, num_workers=0, drop_last=False, alt_dataset=None, **kwargs):
         """Return a batch-iteratrable
 
         See batch_iter docs
@@ -71,13 +71,22 @@ class Dataset(BaseDataLoader):
         Returns:
             Iterable
         """
-        dl = DataLoader(self,
-                        batch_size=batch_size,
-                        # collate_fn=numpy_collate,
-                        shuffle=shuffle,
-                        num_workers=num_workers,
-                        drop_last=drop_last,
-                        **kwargs)
+        if (alt_dataset==None):
+            dl = DataLoader(self,
+                            batch_size=batch_size,
+                            # collate_fn=numpy_collate,
+                            shuffle=shuffle,
+                            num_workers=num_workers,
+                            drop_last=drop_last,
+                            **kwargs)
+        else:
+            dl = DataLoader(self,
+                            batch_size=batch_size,
+                            # collate_fn=numpy_collate,
+                            shuffle=shuffle,
+                            num_workers=num_workers,
+                            drop_last=drop_last,
+                            **kwargs)
         return dl
 
     def batch_iter(self, batch_size=32, shuffle=False, num_workers=0, drop_last=False, **kwargs):

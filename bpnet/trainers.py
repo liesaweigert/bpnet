@@ -42,6 +42,8 @@ class SeqModelTrainer:
         self.output_dir = output_dir
         os.makedirs(self.output_dir, exist_ok=True)
         self.ckp_file = f"{self.output_dir}/model.h5"
+        self.json_file = f"{self.output_dir}/model.json"
+        self.weights_file = f"{self.output_dir}/weights.h5"
         if os.path.exists(self.ckp_file):
             raise ValueError(f"model.h5 already exists in {self.output_dir}")
         self.history_path = f"{self.output_dir}/history.csv"
@@ -129,6 +131,13 @@ class SeqModelTrainer:
         )
         self.model.save(self.ckp_file)
 
+        # serialize model to JSON
+        model_json = self.model.to_json()
+        with open(self.json_file, "w") as json_file:
+          json_file.write(model_json)
+        # serialize weights to HDF5
+        self.model.save_weights(self.weights_file)
+        
         # log metrics from the best epoch
         try:
             dfh = pd.read_csv(self.history_path)

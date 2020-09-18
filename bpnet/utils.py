@@ -12,6 +12,7 @@ from weakref import WeakValueDictionary
 import uuid
 from threading import Lock
 import logging
+from bpnet.losses import ignoreNaNloss
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
